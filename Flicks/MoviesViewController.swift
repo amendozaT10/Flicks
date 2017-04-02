@@ -8,11 +8,14 @@
 
 import UIKit
 import AFNetworking
+import MBProgressHUD
 
 class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
+    @IBOutlet weak var networkIssueView: UIView!
     @IBOutlet weak var tableView: UITableView!
     var movies: [NSDictionary]?
+    var endpoint: String!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,22 +26,30 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         // Do any additional setup after loading the view.
         
         let apiKey = "9d4c95bb11ea30dd2b02cdd51c9f782c"
-        let url = URL(string:"https://api.themoviedb.org/3/movie/now_playing?api_key=\(apiKey)")
+        let urlEndpoint = endpoint as String
+        let urlString = "https://api.themoviedb.org/3/movie/\(urlEndpoint)?api_key=\(apiKey)"
+        let url = URL(string: urlString)
         
-        let request = URLRequest(url: url!)
+        let request = URLRequest(url: url!, timeoutInterval: 10)
         let session = URLSession(
             configuration: URLSessionConfiguration.default,
             delegate:nil,
             delegateQueue:OperationQueue.main
         )
         
+        // Display HUD right before the request is made
+        MBProgressHUD.showAdded(to: self.view, animated: true)
+        
         let task : URLSessionDataTask = session.dataTask(
             with: request as URLRequest,
             completionHandler: { (data, response, error) in
+                
+                // Hide HUD once the network request comes back (must be done on main UI thread)
+                MBProgressHUD.hide(for: self.view, animated: true)
+                
                 if let data = data {
                     if let responseDictionary = try! JSONSerialization.jsonObject(
                         with: data, options:[]) as? NSDictionary {
-                        print("responseDictionary: \(responseDictionary)")
                         
                         // Recall there are two fields in the response dictionary, 'meta' and 'response'.
                         // This is how we get the 'response' field
@@ -46,12 +57,15 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
                         self.movies = responseDictionary["results"] as! [NSDictionary]
                         self.tableView.reloadData()
                         
-                        // This is where you will store the returned array of posts in your posts property
-                        // self.feeds = responseFieldDictionary["posts"] as! [NSDictionary]
                     }
+                } else if let error = error {
+
+                    self.networkIssueView.alpha = 1.0
+
                 }
         });
         task.resume()
+        
     }
 
     override func didReceiveMemoryWarning() {
