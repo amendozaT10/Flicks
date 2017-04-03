@@ -24,7 +24,7 @@ class DetailViewController: UIViewController {
         super.viewDidLoad()
         
         let widthSize = scrollView.frame.size.width
-        let heightSize = infoView.frame.origin.y + infoView.frame.size.height
+        let heightSize = infoView.frame.origin.y + infoView.frame.size.height + 100.0
 
         scrollView.contentSize = CGSize(width: widthSize, height: heightSize)
         

@@ -28,9 +28,11 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         
         // Initialize a UIRefreshControl
         let refreshControl = UIRefreshControl()
-        refreshControl.addTarget(self, action: #selector (refreshControlAction(_refreshControl:) ), for: UIControlEvents.valueChanged)
-        // add refresh control to table view
+        refreshControl.addTarget(self, action: #selector (refreshControlAction(refreshControl:) ), for: UIControlEvents.valueChanged)
+//        // add refresh control to table view
         tableView.insertSubview(refreshControl, at: 0)
+        
+    
         
         // Populate our array of dictionaries
         fetchMovies(url: url)
@@ -40,7 +42,7 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     // Makes a network request to get updated data
     // Updates the tableView with the new data
     // Hides the RefreshControl
-    func refreshControlAction(_ refreshControl: UIRefreshControl) {
+    func refreshControlAction(refreshControl: UIRefreshControl) {
         
         let url = createURL()
         
@@ -141,6 +143,10 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         
     }
     
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated:true)
+    }
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "MovieCell", for: indexPath) as! MovieCell
@@ -150,7 +156,7 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         let overview = movie["overview"] as! String
         let baseUrl = "https://image.tmdb.org/t/p/w500"
         
-        
+    
         if let posterPath = movie["poster_path"] as? String {
             
             let imageUrl = URL(string: baseUrl + posterPath)
@@ -161,8 +167,6 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         cell.titleLabal.text = title
         cell.overviewLabel.text = overview
         
-        
-        print("row \(indexPath.row)")
         return cell
     }
 
