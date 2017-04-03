@@ -67,6 +67,13 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         task.resume()
         
     }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        tableView.contentInset.top = topLayoutGuide.length
+        tableView.contentInset.bottom = bottomLayoutGuide.length
+    }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
