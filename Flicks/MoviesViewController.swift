@@ -24,13 +24,61 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         tableView.delegate = self
 
         // Do any additional setup after loading the view.
+        let url = createURL()
         
+        // Initialize a UIRefreshControl
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: #selector (refreshControlAction(_refreshControl:) ), for: UIControlEvents.valueChanged)
+        // add refresh control to table view
+        tableView.insertSubview(refreshControl, at: 0)
+        
+        // Populate our array of dictionaries
+        fetchMovies(url: url)
+        
+    }
+    
+    // Makes a network request to get updated data
+    // Updates the tableView with the new data
+    // Hides the RefreshControl
+    func refreshControlAction(_ refreshControl: UIRefreshControl) {
+        
+        let url = createURL()
+        
+        // ... Create the URLRequest `myRequest` ...
+        let request = URLRequest(url: url, timeoutInterval: 7)
+        let session = URLSession(
+            configuration: URLSessionConfiguration.default,
+            delegate: nil,
+            delegateQueue: OperationQueue.main)
+        
+        // Display HUD right before the request is made
+        MBProgressHUD.showAdded(to: self.view, animated: true)
+        
+        let task: URLSessionDataTask = session.dataTask(with: request) { (data: Data?, response: URLResponse?, error: Error?) in
+            
+            // Hide HUD once the network request comes back (must be done on main UI thread)
+            MBProgressHUD.hide(for: self.view, animated: true)
+            
+            // Reload the tableView now that there is new data
+            self.fetchData(data: data, response: response, error: error)
+            
+            // Tell the refreshControl to stop spinning
+            refreshControl.endRefreshing()
+        }
+        task.resume()
+    }
+    
+    func createURL() -> URL {
         let apiKey = "9d4c95bb11ea30dd2b02cdd51c9f782c"
-        let urlEndpoint = endpoint as String
+        let urlEndpoint = self.endpoint as String
         let urlString = "https://api.themoviedb.org/3/movie/\(urlEndpoint)?api_key=\(apiKey)"
         let url = URL(string: urlString)
+        return url!
+    }
+    
+    func fetchMovies(url: URL) {
         
-        let request = URLRequest(url: url!, timeoutInterval: 10)
+        let request = URLRequest(url: url, timeoutInterval: 7)
         let session = URLSession(
             configuration: URLSessionConfiguration.default,
             delegate:nil,
@@ -47,25 +95,29 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
                 // Hide HUD once the network request comes back (must be done on main UI thread)
                 MBProgressHUD.hide(for: self.view, animated: true)
                 
-                if let data = data {
-                    if let responseDictionary = try! JSONSerialization.jsonObject(
-                        with: data, options:[]) as? NSDictionary {
-                        
-                        // Recall there are two fields in the response dictionary, 'meta' and 'response'.
-                        // This is how we get the 'response' field
-                        //let responseFieldDictionary = responseDictionary["response"] as! NSDictionary
-                        self.movies = responseDictionary["results"] as! [NSDictionary]
-                        self.tableView.reloadData()
-                        
-                    }
-                } else if let error = error {
-
-                    self.networkIssueView.alpha = 1.0
-
-                }
+                self.fetchData(data: data, response: response, error: error)
         });
         task.resume()
+    }
+    
+    func fetchData( data: Data?, response: URLResponse?, error: Error?)
+    {
         
+        if let data = data {
+            if let responseDictionary = try! JSONSerialization.jsonObject(
+                with: data, options:[]) as? NSDictionary {
+                
+                // Recall there are two fields in the response dictionary, 'meta' and 'response'.
+                // This is how we get the 'response' field
+                //let responseFieldDictionary = responseDictionary["response"] as! NSDictionary
+                self.movies = responseDictionary["results"] as! [NSDictionary]
+                self.tableView.reloadData()
+                
+            }
+        } else if let error = error {
+            self.networkIssueView.alpha = 1.0
+            
+        }
     }
     
     override func viewDidLayoutSubviews() {
