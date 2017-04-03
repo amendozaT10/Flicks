@@ -2,7 +2,7 @@
 
 **Flicks** is a movies app using the [The Movie Database API](http://docs.themoviedb.apiary.io/#).
 
-Time spent: **2** hours spent in total
+Time spent: **8** hours spent in total
 
 ## User Stories
 
@@ -27,7 +27,6 @@ The following **optional** features are implemented:
 The following **additional** features are implemented:
 
 - [x] Formatted the Movie Details viewer to have the details scroll over the movie poster.
-- [x] Added a fade effect on how we display to the network issues view.
 
 ## Video Walkthrough
 
