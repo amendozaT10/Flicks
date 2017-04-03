@@ -10,18 +10,31 @@ import UIKit
 import AFNetworking
 import MBProgressHUD
 
-class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
 
     @IBOutlet weak var networkIssueView: UIView!
     @IBOutlet weak var tableView: UITableView!
+    @IBOutlet weak var searchBar: UISearchBar!
+    
+    
     var movies: [NSDictionary]?
+    var filteredMovies: [NSDictionary]?
+    
     var endpoint: String!
+    var showSearchResults = false
+    
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         tableView.dataSource = self
         tableView.delegate = self
+        
+        searchBar.placeholder = "Search Movies Here!"
+        searchBar.delegate = self
+        
+        
 
         // Do any additional setup after loading the view.
         let url = createURL()
@@ -115,6 +128,8 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
                 self.movies = responseDictionary["results"] as! [NSDictionary]
                 self.tableView.reloadData()
                 
+                // Hide network issue view when refresh call works
+                self.networkIssueView.alpha = 0.0
             }
         } else if let error = error {
             self.networkIssueView.alpha = 1.0
@@ -136,7 +151,13 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if let movies = movies {
-            return movies.count
+            if showSearchResults
+            {
+                return (filteredMovies?.count)!
+            }
+            else {
+                return movies.count
+            }
         } else {
             return 0
         }
@@ -151,21 +172,42 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "MovieCell", for: indexPath) as! MovieCell
         
-        let movie = movies![indexPath.row]
-        let title = movie["title"] as! String
-        let overview = movie["overview"] as! String
-        let baseUrl = "https://image.tmdb.org/t/p/w500"
-        
-    
-        if let posterPath = movie["poster_path"] as? String {
+        if showSearchResults
+        {
+            let movie = filteredMovies![indexPath.row]
+            let title = movie["title"] as! String
+            let overview = movie["overview"] as! String
+            let baseUrl = "https://image.tmdb.org/t/p/w500"
             
-            let imageUrl = URL(string: baseUrl + posterPath)
-            cell.posterView.setImageWith(imageUrl!)
-        
+            
+            if let posterPath = movie["poster_path"] as? String {
+                
+                let imageUrl = URL(string: baseUrl + posterPath)
+                cell.posterView.setImageWith(imageUrl!)
+                
+            }
+            
+            cell.titleLabal.text = title
+            cell.overviewLabel.text = overview
         }
-        
-        cell.titleLabal.text = title
-        cell.overviewLabel.text = overview
+        else
+        {
+            let movie = movies![indexPath.row]
+            let title = movie["title"] as! String
+            let overview = movie["overview"] as! String
+            let baseUrl = "https://image.tmdb.org/t/p/w500"
+            
+            
+            if let posterPath = movie["poster_path"] as? String {
+                
+                let imageUrl = URL(string: baseUrl + posterPath)
+                cell.posterView.setImageWith(imageUrl!)
+                
+            }
+            
+            cell.titleLabal.text = title
+            cell.overviewLabel.text = overview
+        }
         
         return cell
     }
@@ -176,18 +218,66 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
     // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
-        let cell = sender as! UITableViewCell
-        let indexPath = tableView.indexPath(for: cell)
-        let movie = movies![indexPath!.row]
-        
-        let detailViewController = segue.destination as! DetailViewController
-        
-        detailViewController.movie = movie
-        
-        
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
+        if (showSearchResults)
+        {
+            let cell = sender as! UITableViewCell
+            let indexPath = tableView.indexPath(for: cell)
+            let movie = filteredMovies![indexPath!.row]
+            
+            let detailViewController = segue.destination as! DetailViewController
+            
+            detailViewController.movie = movie
+        }
+        else
+        {
+            let cell = sender as! UITableViewCell
+            let indexPath = tableView.indexPath(for: cell)
+            let movie = movies![indexPath!.row]
+            
+            let detailViewController = segue.destination as! DetailViewController
+            
+            detailViewController.movie = movie
+        }
     }
+    
+    @IBAction func onTap(_ sender: Any) {
+        
+        searchBar.endEditing(true)
+    }
+    
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        searchBar.endEditing(true)
+    }
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        showSearchResults = true
+        searchBar.endEditing(true)
+        self.tableView.reloadData()
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        self.filteredMovies = self.movies?.filter({ (movieDict: NSDictionary) -> Bool in
+            
+            let movieTitle = movieDict["title"] as! String
+            return movieTitle.lowercased().range(of: searchText, options: .caseInsensitive) != nil
+        })
+        
+        if (searchText != "")
+        {
+            showSearchResults = true
+            self.tableView.reloadData()
+        }
+        else
+        {
+            showSearchResults = false
+            self.tableView.reloadData()
+        }
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        searchBar.endEditing(true)
+    }
+    
     
 
 }
